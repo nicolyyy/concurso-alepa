@@ -296,6 +296,16 @@ details.mc>summary::-webkit-details-marker{display:none}
 .lac-rem p+p{margin-top:6px}.lac-rem .onde{display:block}
 #p-lac .ed-sum{margin-top:12px}
 #p-lac .tool{margin-top:10px}
+
+.onde-link{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;color:var(--acai)}
+.onde-link:hover,.onde-link:focus-visible{background:var(--acai-soft);outline:none;border-radius:4px}
+.art-modal{position:fixed;inset:0;z-index:200;background:rgba(20,12,40,.55);display:none;align-items:center;justify-content:center;padding:16px}
+.art-modal.open{display:flex}
+.art-modal .box{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;max-width:760px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.art-modal header{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
+.art-modal header b{font:700 1rem var(--f-display)}
+.art-modal .bd{overflow:auto;padding:14px 16px;display:grid;gap:12px}
+.art-modal .bd h5{margin:0 0 4px;font:700 .8rem var(--f-mono);color:var(--muted)}
 </style>
 
 <header class="hero"><div class="wrap">
@@ -577,7 +587,7 @@ details.mc>summary::-webkit-details-marker{display:none}
   </div>
   <div class="alert">
     <h3>Só o que está no PDF</h3>
-    <p>O PDF traz o texto atual da lei e também redações da Medida Provisória nº 703/2015, marcadas como “Vigência encerrada”. Usei apenas o texto atual e ignorei as redações da medida provisória. O PDF não traz explicações nem exemplos, só a lei; por isso não há exemplos aqui. O resumo geral é escrito por mim, cada frase com o artigo de onde vem. Os rótulos em negrito só indicam o assunto do trecho.</p>
+    <p>O PDF traz o texto atual da lei e também redações da Medida Provisória nº 703/2015, marcadas como “Vigência encerrada”. Usei apenas o texto atual e ignorei as redações da medida provisória. O PDF não traz explicações nem exemplos, só a lei; por isso não há exemplos aqui. O resumo geral é escrito por mim, cada frase com o artigo de onde vem. Os rótulos em negrito só indicam o assunto do trecho. <b>Clique em qualquer referência de artigo (por exemplo, “Art. 5º”) para ler o texto completo dele.</b></p>
   </div>
   <div class="card ed-sum"><div class="ed-jumps"><button type="button" class="ed-jump" data-t="lac-0"><span class="mono">I</span> Disposições gerais</button><button type="button" class="ed-jump" data-t="lac-1"><span class="mono">II</span> Dos atos lesivos à administração pública nacional ou estrangeira</button><button type="button" class="ed-jump" data-t="lac-2"><span class="mono">III</span> Da responsabilização administrativa</button><button type="button" class="ed-jump" data-t="lac-3"><span class="mono">IV</span> Do processo administrativo de responsabilização</button><button type="button" class="ed-jump" data-t="lac-4"><span class="mono">V</span> Do acordo de leniência</button><button type="button" class="ed-jump" data-t="lac-5"><span class="mono">VI</span> Da responsabilização judicial</button><button type="button" class="ed-jump" data-t="lac-6"><span class="mono">VII</span> Disposições finais</button></div>
     <div class="ed-tools"><input type="search" id="lacq" placeholder="Buscar na lei (ex.: leniência, 180 dias, CNEP)" aria-label="Buscar na lei"><button type="button" class="btn" id="lacexp">Abrir todos os capítulos</button><button type="button" class="btn" id="lacall">Abrir todos os textos</button><span class="legend" id="laccount"></span></div></div>
@@ -820,6 +830,39 @@ var al=false,ba=document.getElementById('lacall');
 ba.onclick=function(){al=!al;chs.forEach(function(a){if(a.hidden)return;var d=a.querySelector('details.nm');d.open=al;if(al)a.open=true});ba.textContent=al?'Fechar todos os textos':'Abrir todos os textos'};
 [].forEach.call(root.querySelectorAll('.ed-jump'),function(b){b.onclick=function(){var t=document.getElementById(b.dataset.t);if(t.hidden){q.value='';q.dispatchEvent(new Event('input'))}t.open=true;t.scrollIntoView({behavior:'smooth',block:'start'})}});
 refresh();
+})();
+</script>
+<script>
+(function(){
+var tabs=['p-lac','p-regimento'];
+var modal=document.createElement('div');modal.className='art-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Texto do artigo');
+modal.innerHTML='<div class="box"><header><b id="amt"></b><button type="button" class="btn" id="amx">Fechar</button></header><div class="bd" id="amb"></div></div>';
+document.body.appendChild(modal);
+function close(){modal.classList.remove('open');if(modal._from)modal._from.focus()}
+modal.addEventListener('click',function(e){if(e.target===modal||e.target.id==='amx')close()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&modal.classList.contains('open'))close()});
+function nums(txt){
+  var m=txt.match(/^Arts\.\s*(\d+)º?\s*(a|e)\s*(\d+)º?/);
+  if(m){var a=+m[1],b=+m[3],o=[];if(m[2]==='a'){for(var i=a;i<=b;i++)o.push(i)}else o=[a,b];return o}
+  m=txt.match(/^Arts?\.\s*(\d+)/);return m?[+m[1]]:[];
+}
+tabs.forEach(function(id){
+  var root=document.getElementById(id);if(!root)return;
+  var map={};
+  [].forEach.call(root.querySelectorAll('.artfull'),function(a){var h=a.querySelector('h5');var n=parseInt(h.textContent.replace(/\D+/g,''),10);map[n]=a.querySelector('.norm-box').outerHTML});
+  [].forEach.call(root.querySelectorAll('.onde'),function(s){
+    var t=s.textContent.trim();if(!/^Arts?\./.test(t))return;
+    var ns=nums(t).filter(function(n){return map[n]});if(!ns.length)return;
+    s.classList.add('onde-link');s.setAttribute('role','button');s.setAttribute('tabindex','0');s.title='Clique para ler o texto do artigo';
+    function open(){
+      document.getElementById('amt').textContent=t;
+      document.getElementById('amb').innerHTML=ns.map(function(n){return '<div><h5>Art. '+n+'</h5>'+map[n]+'</div>'}).join('');
+      modal._from=s;modal.classList.add('open');document.getElementById('amx').focus();
+    }
+    s.addEventListener('click',open);
+    s.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}});
+  });
+});
 })();
 </script>
 </main>
